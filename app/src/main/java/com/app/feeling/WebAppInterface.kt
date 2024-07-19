@@ -1,6 +1,5 @@
 package com.app.feeling
 
-import android.util.Log
 import android.webkit.JavascriptInterface
 import androidx.activity.ComponentActivity
 
