@@ -1,9 +1,12 @@
 package com.app.feeling
 
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.annotation.RequiresApi
 
 class MainActivity : ComponentActivity(), PermissionManager.PermissionCallback {
     private lateinit var webView: WebView
@@ -11,6 +14,7 @@ class MainActivity : ComponentActivity(), PermissionManager.PermissionCallback {
     private lateinit var permissionManager: PermissionManager
     private lateinit var webViewSetup: WebViewSetup
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -33,7 +37,7 @@ class MainActivity : ComponentActivity(), PermissionManager.PermissionCallback {
     }
 
     override fun onSomePermissionsDenied(deniedPermissions: Array<String>) {
-        // Handle denied permissions
+        Log.d("MainActivity", "Some permissions were denied: ${deniedPermissions.joinToString()}")
     }
 
     private fun setupBackNavigation() {
