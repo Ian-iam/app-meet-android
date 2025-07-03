@@ -1,4 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Feeling" parent="android:Theme.Material.Light.NoActionBar"/>
+    <!-- 기본 테마 - 시스템 바 투명화 적용 -->
+    <style name="Theme.Feeling" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- 시스템 바 투명화 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- 상태표시줄 텍스트 색상 (어두운 텍스트) -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
+        <!-- Edge-to-Edge 지원 -->
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+
+        <!-- 시스템 UI와 콘텐츠 분리 -->
+        <item name="android:fitsSystemWindows">false</item>
+
+        <!-- 기본 배경색 -->
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+
+    <!-- 스플래시 스크린을 위한 테마 (기존 유지) -->
+    <style name="Theme.Feeling.Starting" parent="Theme.SplashScreen">
+        <!-- 스플래시 화면 배경 색상 -->
+        <item name="windowSplashScreenBackground">@android:color/white</item>
+
+        <!-- 스플래시 화면에 표시할 아이콘 -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+
+        <!-- 스플래시 화면 이후에 적용할 테마 (업데이트된 테마) -->
+        <item name="postSplashScreenTheme">@style/Theme.Feeling</item>
+
+        <!-- 스플래시에도 시스템 바 투명화 적용 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- 선택사항: 어두운 테마 지원 -->
+    <style name="Theme.Feeling.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
 </resources>

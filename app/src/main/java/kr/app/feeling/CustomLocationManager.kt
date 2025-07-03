@@ -1,17 +1,16 @@
-package com.app.feeling
+package kr.app.feeling
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.util.Log
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
+import androidx.core.content.ContextCompat
+import android.Manifest
 
-class CustomLocationManager(context: Context) {
+class CustomLocationManager(private val context: Context) {
     private val locationManager: LocationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private var currentLocation: Location? = null
 
@@ -54,26 +53,25 @@ class CustomLocationManager(context: Context) {
         }
     }
 
-    private fun isLocationEnabled(): Boolean {
+    fun isLocationEnabled(): Boolean {
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
 
     fun getCurrentLocationString(): String {
-        return currentLocation?.let { "${it.latitude},${it.longitude}" } ?: run {
-            Log.d("CustomLocationManager", "getCurrentLocationString: currentLocation is null")
-            "null"
+        try {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                if (currentLocation == null) {
+                    currentLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                        ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                }
+                return currentLocation?.let { "${it.latitude},${it.longitude}" } ?: "null"
+            }
+            return "null"
+        } catch (e: SecurityException) {
+            Log.e("Location", "Security exception when getting location", e)
+            return "null"
         }
-    }
-
-    fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val earthR = 6371 // 지구의 반경 (km)
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val a = sin(dLat / 2) * sin(dLat / 2) +
-                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
-                sin(dLon / 2) * sin(dLon / 2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return earthR * c
     }
 }

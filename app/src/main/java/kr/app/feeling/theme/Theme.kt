@@ -1,4 +1,4 @@
-package com.app.feeling.theme
+package kr.app.feeling.theme
 
 import android.app.Activity
 import android.os.Build

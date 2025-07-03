@@ -1,4 +1,4 @@
-package com.app.feeling
+package kr.app.feeling
 
 import android.Manifest
 import android.app.AlertDialog
@@ -7,14 +7,15 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 class PermissionManager(private val activity: ComponentActivity) {
     private var permissionCallback: PermissionCallback? = null
+    private var callback: PermissionCallback? = null
 
     interface PermissionCallback {
         fun onAllPermissionsGranted()
@@ -25,53 +26,95 @@ class PermissionManager(private val activity: ComponentActivity) {
         this.permissionCallback = callback
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    fun requestPermissions() {
-        val permissions = mutableListOf(
-            Manifest.permission.INTERNET,
-            Manifest.permission.CAMERA,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-        )
-
-        // Android 13 (API 33) 이상에서만 알림 권한 추가
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-
+    fun checkAndRequestPermissions(permissions: List<String>, showDialog: Boolean = true) {
         val missingPermissions = permissions.filter {
             ContextCompat.checkSelfPermission(activity, it) != PackageManager.PERMISSION_GRANTED
         }
 
-        if (missingPermissions.isNotEmpty()) {
+        if (missingPermissions.isEmpty()) {
+            permissionCallback?.onAllPermissionsGranted()
+            return
+        }
+
+        // 이번만 허용 상태 체크
+        val shouldAskAgain = missingPermissions.any {
+            ActivityCompat.shouldShowRequestPermissionRationale(activity, it)
+        }
+
+        if (shouldAskAgain || showDialog) {
             permissionRequest.launch(missingPermissions.toTypedArray())
         } else {
-            permissionCallback?.onAllPermissionsGranted()
+            permissionCallback?.onSomePermissionsDenied(missingPermissions.toTypedArray())
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    fun requestPermissions() {
+        val permissions = mutableListOf(
+            Manifest.permission.INTERNET,
+            Manifest.permission.POST_NOTIFICATIONS
+        )
+
+        val permissionsToRequest = permissions.filter {
+            ContextCompat.checkSelfPermission(activity, it) != PackageManager.PERMISSION_GRANTED
+        }.toTypedArray()
+
+        if (permissionsToRequest.isEmpty()) {
+            callback?.onAllPermissionsGranted()
+        } else {
+            ActivityCompat.requestPermissions(activity, permissionsToRequest, 100)
+        }
+    }
+
     private val permissionRequest = activity.registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        permissions.entries.forEach {
-            Log.d("Permission", "${it.key} is ${if (it.value) "granted" else "denied"}")
-        }
-
         val allGranted = permissions.entries.all { it.value }
         if (allGranted) {
             permissionCallback?.onAllPermissionsGranted()
         } else {
             val deniedPermissions = permissions.filter { !it.value }.keys.toTypedArray()
-            showFeatureLimitedDialog()
+            // 요청한 권한 타입을 전달
+            showFeatureLimitedDialog(getCurrentPermissionType(deniedPermissions))
             permissionCallback?.onSomePermissionsDenied(deniedPermissions)
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private fun showFeatureLimitedDialog() {
-        val permanentlyDeniedPermissions = getPermanentlyDeniedPermissions()
+    private fun getCurrentPermissionType(permissions: Array<String>): String? {
+        return when {
+            permissions.any { it == Manifest.permission.READ_MEDIA_IMAGES } -> "photo"
+            permissions.any {
+                it in listOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            } -> "location"
+
+            else -> null
+        }
+    }
+
+    private fun showFeatureLimitedDialog(requestedPermissionType: String? = null) {
+        val permanentlyDeniedPermissions = when (requestedPermissionType) {
+            "photo" -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    getPermanentlyDeniedPermissions(listOf(Manifest.permission.READ_MEDIA_IMAGES))
+                } else {
+                    getPermanentlyDeniedPermissions(listOf(Manifest.permission.READ_EXTERNAL_STORAGE))
+                }
+            }
+
+            "location" -> getPermanentlyDeniedPermissions(
+                listOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+
+            null -> getPermanentlyDeniedPermissions()
+            else -> emptyList()
+        }
+
         val permissionDetails = getPermissionDetails(permanentlyDeniedPermissions)
 
         val message = buildString {
@@ -102,15 +145,23 @@ class PermissionManager(private val activity: ComponentActivity) {
             .show()
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private fun getPermanentlyDeniedPermissions(): List<String> {
-        return listOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.CAMERA,
-            Manifest.permission.POST_NOTIFICATIONS,
-            Manifest.permission.READ_MEDIA_IMAGES
-        ).filter {
+    private fun getPermanentlyDeniedPermissions(permissions: List<String>? = null): List<String> {
+        val checkPermissions = permissions ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            listOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.POST_NOTIFICATIONS,
+                Manifest.permission.READ_MEDIA_IMAGES
+            )
+        } else {
+            listOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            )
+        }
+
+        return checkPermissions.filter {
             ContextCompat.checkSelfPermission(activity, it) != PackageManager.PERMISSION_GRANTED
                     && !activity.shouldShowRequestPermissionRationale(it)
         }
@@ -120,12 +171,12 @@ class PermissionManager(private val activity: ComponentActivity) {
         return permissions.joinToString("\n") { permission ->
             when (permission) {
                 Manifest.permission.ACCESS_FINE_LOCATION ->
-                    "- 정확한 위치: 정밀한 위치 기반 기능 사용 (예: 내비게이션, 주변 장소 검색)"
+                    "- 정확한 위치: 정밀한 위치 기반 기능 사용 (예: 상대방과의 거리 계산)"
 
                 Manifest.permission.ACCESS_COARSE_LOCATION ->
-                    "- 대략적 위치: 광역 위치 기반 서비스 이용 (예: 날씨 정보, 지역 뉴스)"
+                    "- 대략적 위치: 광역 위치 기반 서비스 이용 (예: 상대방과의 거리 계산)"
 
-                Manifest.permission.CAMERA -> "- 카메라: 사진 및 비디오 촬영"
+                //Manifest.permission.CAMERA -> "- 카메라: 사진 및 비디오 촬영"
                 Manifest.permission.POST_NOTIFICATIONS -> "- 알림: 중요 업데이트 및 정보 전송"
                 Manifest.permission.READ_MEDIA_IMAGES -> "- 사진 접근: 기기의 사진 및 이미지 보기 및 선택 (예: 프로필 사진 업로드, 이미지 공유)"
                 else -> "- ${permission.split(".").last()}: 관련 기능"

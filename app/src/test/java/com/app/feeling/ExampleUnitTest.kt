@@ -1,4 +1,4 @@
-package com.app.feeling
+package kr.app.feeling
 
 import org.junit.Test
 
