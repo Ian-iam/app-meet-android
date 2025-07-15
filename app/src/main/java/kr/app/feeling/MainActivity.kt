@@ -1,10 +1,12 @@
 package kr.app.feeling
 
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.ViewGroup
+import android.webkit.ValueCallback
 import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -21,6 +23,8 @@ class MainActivity : ComponentActivity(), PermissionManager.PermissionCallback {
     private lateinit var customLocationManager: CustomLocationManager
     private lateinit var permissionManager: PermissionManager
     private lateinit var webViewSetup: WebViewSetup
+
+    private var downloadCallback: ValueCallback<Uri?>? = null
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,12 +89,13 @@ class MainActivity : ComponentActivity(), PermissionManager.PermissionCallback {
         webView.settings.userAgentString = newUserAgent
 
         // 매니저들 초기화
-        customLocationManager = CustomLocationManager(this)
+        /*customLocationManager = CustomLocationManager(this)*/
         permissionManager = PermissionManager(this)
         permissionManager.setPermissionCallback(this)
 
         // WebView 설정
-        webViewSetup = WebViewSetup(this, customLocationManager, webViewLayout)
+        /*webViewSetup = WebViewSetup(this, customLocationManager, webViewLayout)*/
+        webViewSetup = WebViewSetup(this, null, webViewLayout)
         webViewSetup.setup(webView)
 
         // 빌링 매니저 초기화
@@ -136,8 +141,8 @@ class MainActivity : ComponentActivity(), PermissionManager.PermissionCallback {
      * 모든 권한이 승인되었을 때 콜백
      */
     override fun onAllPermissionsGranted() {
-        customLocationManager.startLocationUpdates()
-        Log.d("Feeling", "모든 권한이 승인되어 위치 업데이트를 시작합니다.")
+        /*customLocationManager.startLocationUpdates()
+        Log.d("Feeling", "모든 권한이 승인되어 위치 업데이트를 시작합니다.")*/
     }
 
     /**

@@ -16,7 +16,7 @@ import java.net.URISyntaxException
 
 class WebViewSetup(
     private val activity: ComponentActivity,
-    private val customLocationManager: CustomLocationManager,
+    private val customLocationManager: CustomLocationManager?, // nullable로 변경
     private val webViewLayout: ViewGroup
 ) {
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
@@ -157,9 +157,11 @@ class WebViewSetup(
         }
         billingManager = BillingManager(activity, webView)
         val permissionManager = PermissionManager(activity)
+
+        // WebAppInterface 생성 시 위치 매니저를 nullable로 처리
         val webAppInterface = WebAppInterface(
             activity,
-            customLocationManager,
+            customLocationManager, // nullable 전달
             billingManager,
             webView,
             { token ->
@@ -192,25 +194,5 @@ class WebViewSetup(
             webView.destroy()
         }
         popupWebViews.clear()
-    }
-
-    fun handleBackPressed(mainWebView: WebView): Boolean {
-        // 열린 팝업 웹뷰가 있으면 마지막 팝업 웹뷰 닫기
-        if (popupWebViews.isNotEmpty()) {
-            val lastPopup = popupWebViews.last()
-            if (lastPopup.canGoBack()) {
-                lastPopup.goBack()
-            } else {
-                removePopupWebView(lastPopup)
-            }
-            return true
-        }
-
-        return if (mainWebView.canGoBack()) {
-            mainWebView.goBack()
-            true
-        } else {
-            false
-        }
     }
 }

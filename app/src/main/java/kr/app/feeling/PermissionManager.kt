@@ -82,13 +82,18 @@ class PermissionManager(private val activity: ComponentActivity) {
 
     private fun getCurrentPermissionType(permissions: Array<String>): String? {
         return when {
-            permissions.any { it == Manifest.permission.READ_MEDIA_IMAGES } -> "photo"
             permissions.any {
+                it in listOf(
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.READ_MEDIA_VIDEO
+                )
+            } -> "photo"
+            /*permissions.any {
                 it in listOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 )
-            } -> "location"
+            } -> "location"*/
 
             else -> null
         }
@@ -98,18 +103,18 @@ class PermissionManager(private val activity: ComponentActivity) {
         val permanentlyDeniedPermissions = when (requestedPermissionType) {
             "photo" -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    getPermanentlyDeniedPermissions(listOf(Manifest.permission.READ_MEDIA_IMAGES))
+                    getPermanentlyDeniedPermissions(listOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO))
                 } else {
                     getPermanentlyDeniedPermissions(listOf(Manifest.permission.READ_EXTERNAL_STORAGE))
                 }
             }
 
-            "location" -> getPermanentlyDeniedPermissions(
+           /* "location" -> getPermanentlyDeniedPermissions(
                 listOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 )
-            )
+            )*/
 
             null -> getPermanentlyDeniedPermissions()
             else -> emptyList()
@@ -148,15 +153,16 @@ class PermissionManager(private val activity: ComponentActivity) {
     private fun getPermanentlyDeniedPermissions(permissions: List<String>? = null): List<String> {
         val checkPermissions = permissions ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             listOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
+                /*Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,*/
                 Manifest.permission.POST_NOTIFICATIONS,
-                Manifest.permission.READ_MEDIA_IMAGES
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO
             )
         } else {
             listOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
+                /*Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,*/
                 Manifest.permission.READ_EXTERNAL_STORAGE
             )
         }
@@ -170,15 +176,16 @@ class PermissionManager(private val activity: ComponentActivity) {
     private fun getPermissionDetails(permissions: List<String>): String {
         return permissions.joinToString("\n") { permission ->
             when (permission) {
-                Manifest.permission.ACCESS_FINE_LOCATION ->
+                /*Manifest.permission.ACCESS_FINE_LOCATION ->
                     "- 정확한 위치: 정밀한 위치 기반 기능 사용 (예: 상대방과의 거리 계산)"
 
                 Manifest.permission.ACCESS_COARSE_LOCATION ->
                     "- 대략적 위치: 광역 위치 기반 서비스 이용 (예: 상대방과의 거리 계산)"
-
+*/
                 //Manifest.permission.CAMERA -> "- 카메라: 사진 및 비디오 촬영"
                 Manifest.permission.POST_NOTIFICATIONS -> "- 알림: 중요 업데이트 및 정보 전송"
-                Manifest.permission.READ_MEDIA_IMAGES -> "- 사진 접근: 기기의 사진 및 이미지 보기 및 선택 (예: 프로필 사진 업로드, 이미지 공유)"
+                Manifest.permission.READ_MEDIA_IMAGES -> "- 사진 접근(항상 모두 허용): 프로필 사진을 등록하고 생성된 이미지를 저장하기 위해 기기의 사진 라이브러리에 접근합니다"
+                Manifest.permission.READ_MEDIA_VIDEO -> "- 동영상 접근(항상 모두 허용): 생성된 동영상을 저장하기 위해 기기의 사진 라이브러리에 접근합니다"
                 else -> "- ${permission.split(".").last()}: 관련 기능"
             }
         }
